@@ -20,7 +20,7 @@ func main() {
 	}
 
 	// set up Telegram bot
-	bot, err := tg.NewBotAPI("5835596784:AAFxweJOUyXtIfhuvZVXnhghaJs-S47wYHg")
+	bot, err := tg.NewBotAPI("Your bot token which you must recieve from the fatherbot")
 	if err != nil {
 		log.Fatal(err)
 	}
