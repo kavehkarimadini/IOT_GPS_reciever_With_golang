@@ -13,14 +13,14 @@ import (
 
 func main() {
 	// set up serial port for GPS receiver
-	config := &serial.Config{Name: "COM4", Baud: 9600}
+	config := &serial.Config{Name: "/dev/ttyACM0", Baud: 9600}
 	ser, err := serial.OpenPort(config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// set up Telegram bot
-	bot, err := tg.NewBotAPI("Your bot token which you must recieve from the fatherbot")
+	bot, err := tg.NewBotAPI("Your own bot api")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,12 +37,16 @@ func main() {
 
 		if update.Message.Text == "gps" {
 			// retrieve GPS data
+			// It sends the gpgga command to the gps receiver
 			_, err := ser.Write([]byte("$GPGGA\r\n"))
 			if err != nil {
 				log.Fatal(err)
 			}
+			// waits 1 second for the response
 			time.Sleep(time.Second)
+			// makes a list of type byte with size of 1024 bytes
 			buf := make([]byte, 1024)
+			// reads the response from the gps receiver
 			n, err := ser.Read(buf)
 			if err != nil {
 				log.Fatal(err)
@@ -51,18 +55,21 @@ func main() {
 			var foundStart bool
 			var currentSentence string
 			for _, r := range buf {
+				// iterates through buf, if $ is found then it rewrites the current sentence to empty string
 				if r == '$' {
 					foundStart = true
 					currentSentence = ""
 				}
-
+				// if $ is found then it adds the current sentence with the elements of buf accordingly
 				if foundStart {
 					currentSentence += string(r)
+					//when it encounters \n then it will check if it starts with gpgga, if it is found then we have our desired sentence
 					if r == '\n' {
 						if strings.HasPrefix(currentSentence, "$GPGGA") {
 							fmt.Println(currentSentence)
 							break
 						}
+						// if gpgga is not at the beginning of the sentence then mark found as false that will make it stop adding
 						foundStart = false
 					}
 				}
@@ -75,6 +82,7 @@ func main() {
 			}
 
 			// Extract the latitude and longitude values
+			// checks if the msg is a gga format
 			if gga, ok := msg.(nmea.GGA); ok {
 				lat := gga.Latitude
 				lon := gga.Longitude
